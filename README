@@ -1,0 +1,33 @@
+REQUIREMENTS
+
+Linux (or other unix?), C++ compiler (g++ 2.95 and higher will do). You need also sstream and argp.h headers; they are normally present, unless you have really old system. You need pthreads library and headers. Configure should check for this.
+
+Works with OSS (/dev/sequencer) and ALSA (recommended). For ALSA, you need libasound (ALSA libraries, see http://www.alsa-project.org) to compile and functioning ALSA sequencer interface to run. OSS emulation is not needed. Tested with library libasound 0.9.0rc3 and ALSA modules from kernel 2.5.54.
+
+
+BUILDING
+
+Relly clean compilation from sources, run in top-level dir:
+
+ ./autogen.sh
+ ./configure [options]
+ make
+ make install
+
+For documentation, try `make info', `make dvi' or `make html'. Note that only info docs are installed by `make install'
+
+ARCHITECTURE (may not be up-to-date)
+
+Read the code. Also the info documentation.
+
+We run Metronome (if no --flat) and MidiClient threads. The main thread after initialization only waits for signals and terminated Rumor properly if SIGTERM arrives. Metronome keeps track of passed time (in terms of "atomic" (from the point of view of quantization) time units, TUs) and every beat, it plays a MIDI tick. First beat in a bar is distinguished from others. When a MIDI event arrives, it is always passed to output. If it is a note on-set (or off-set), Notator->NoteOn (or NoteOff, which is ignored in legato mode) is called. Notator requests quantized time from Metronome->QuantizeNow.
+
+Rhythm notation: read the code and docs. Time before onset within bar is always divisible by the note duration (e.g. 8th note will begin only where bar cen be padded by 8th rests before the note). The longest admissible (user-defined rhythm via (rumor-rhythms) overrides all rules!) note is found, if needed, it is tied to the rest (recursion). So in 4/4, this will never happen: "r4 c2 r4", as the half note crosses 3rd beat which is a multiple of half note duration; rather we will get "r4 c4~c4 r4". Barline breaks any note.
+
+Pitch notation: netherlands.
+
+Quantization: if a tick occurs in t and dt is time between two succesive ticks, we quantize to the closest atomic tick (t) everything in [t-0.5dt; t+0.5dt].
+
+ALSA and OSS interfaces are implemented (the OSS one is rather crappy). To implement a different one, derive a class from MidiClient, implementing methods `void Loop(void)' (starts the MIDI thread loop) and `void PlayNote(unsigned pitch, unsigned velocity, unsigned instrument, unsigned channel)' (for metronome ticks). In the loop, call `pNotator->NoteOn(unsigned pitch)' or `pNotator->NoteOff(unsigned pitch)' for every on-set/off-set respectively. Call pthread_testcancel() regularly if there are no thread cancellation points in the loop. All interface setup must be done in constructor.
+
+Keyboard interface parazites on ALSA or OSS, it can not be used standalone (no output). See docs on customization.

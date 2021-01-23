@@ -1,0 +1,45 @@
+1.0.4
+  move to http://www.launchpad.net/rumor
+  old homepage (temporarily?) at http://beta.arcig.cz/~eudoxos/rumor
+  apply patches, fix warning
+1.0.3b
+  fix URL typo in documentation
+1.0.3a
+  new homepage http://www.volny.cz/smilauer/rumor
+1.0.3
+  Chord support.
+  New option --no-chords make rumor behave the old way.
+  (rumor-beats) customizes metronome MIDI beats.
+1.0.2a
+  Bugfix release (do NOT use 1.0.2, please)
+  option --note-names removed
+  new option --lang={ne,en,en-short,de,no,sv,it,ca,es}
+  --key option takes --lang into account (it the latter comes first)
+1.0.2
+  New options: --explicit-durations, --absolute-pitches
+  New option --note-names={nederlands,italiano}
+  MIDI patches for rhtyhm indication changed (uses beat channel)
+1.0.1
+  Fixed a small bug that broke linking with g++ > 3.2 
+    (thanks to Michal Seta for the report and to Jan Nieuwenhuizen for the patch)
+  Minor changes for sample sheet    
+1.0.0
+  New option --flat for getting just raw pitches without rhythms
+  (rumor-pitches) can override default pitch names
+0.9.5
+  Bugfix release: leading and trailing rests, thread management (segfaults)
+  New option -D,--no-dots (disables dotted notes)
+0.9.4
+  New options: --wait and --strip
+  Leading and trailing rests are printed by default; disable by --strip
+  Last note before exitting is closed and printed
+0.9.3
+  Exhaustive info and HTML docuemntation
+  Some options syntax was changed (for user-friendliness) (see documentation):
+    --meter can take slash separated values (necessary  if either is bigger than 10)
+    --granularity changed to --grain, valid argument is lilypond length (e.g. 32)
+    (rumor-rhythms) changed in the same way
+  new --kbd option, allowing emulate MIDI keyboard using just computer keyboard
+  (rumor-kbd) allows user-defined key bindings
+0.9.2
+  Rumor uses autoconf; for compilation, run ./configure and make (eventually make install)

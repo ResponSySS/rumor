@@ -1,0 +1,17 @@
+short-term:
+add sanity checks for rumor-beats arguments (such as instrument number <128 etc.)
+change example in doc so that it shows off with chords also :-)
+add some links to projects/people using rumor
+someone test thoroughly the OSS interface (not via ALSA emulation, please)
+use atexit() to restore terminal settings if rumor exits abnormally (?)
+
+long-term:
+OSS metronome may clash with keyboard (if on the same pitch) (someone test this!)
+DONE: use MIDI drums for metronome? (how?: use (rumor-beats))
+do not switch MIDI instruments with OSS interface
+DONE: optionally, produce absolute Lilypond pitches (needed?)
+manual tempo adjustements on-the-fly (needed?)
+key adjustement on-the-fly (needed?)
+(on-the-fly goodies aswell as kbd input need some kind of UI; ncurses?)
+
+Feedback on these and other useful ideas is appreciated.
