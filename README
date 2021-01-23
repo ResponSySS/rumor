@@ -1,3 +1,11 @@
+Rumor is a realtime monophonic (with chords) MIDI keyboard to Lilypond converter. It receives MIDI events, quantizes them according to its metronome on the fly and outputs handwritten-like corresponding Lilypond notation. Tempo, meter, key and other parameters can be set via command-line options.
+Václav Šmilauer at https://launchpad.net/rumor was the original creator.
+I do not maintain this, so feel free to fork it.
+
+The original README follows.
+
+***
+
 REQUIREMENTS
 
 Linux (or other unix?), C++ compiler (g++ 2.95 and higher will do). You need also sstream and argp.h headers; they are normally present, unless you have really old system. You need pthreads library and headers. Configure should check for this.
