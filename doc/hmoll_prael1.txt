@@ -1,0 +1,3 @@
+%% see HTML doc for real image
+e,16 d32 cis d16 b'8 ais16 ~ ais32 cis b ais b16 d8 cis16 ~|
+cis32 e d cis d16 fis8 e16 ~ e32 g fis e fis16 b8 ais16 |

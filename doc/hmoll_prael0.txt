@@ -1,0 +1,8 @@
+%% for real image, see HTML doc
+b'8 ~ b32 a g fis g16 e cis8 ~ cis16 g' fis8 |
+e d b4 ais8 r |
+ais b32 a g fis g16 e' g, fis32 e fis16 cis' e, cis' |
+e, d32 cis d16 b' ~ b ais ~ ais32 cis b ais b16 d ~ d cis ~|
+cis32 e d cis d16 fis ~ fis e ~ e32 g fis e fis16 b ~ b ais |
+b32 a gis fis gis16 b eis, fis ~ fis32 fis eis dis eis16 gis ais, b ~|
+b32 b ais gis ais16 cis eis, fis d'8 cis

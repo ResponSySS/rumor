@@ -1,0 +1,411 @@
+\input texinfo   @c -*-texinfo-*-
+@setfilename rumor.info
+@settitle Rumor
+@dircategory Sound
+@direntry
+* Rumor: (rumor).        Rumor --- Really Unintelligent Music transcriptOR
+@end direntry
+
+
+@ifnottex
+@node Top
+@end ifnottex
+
+@include version.texi
+
+@chapter Rumor --- Really Unintelligent Music transcriptOR
+
+This documentation was generated for Rumor @value{VERSION} at @value{UPDATED}.
+
+Rumor is a realtime monophonic (with chords) MIDI keyboard to Lilypond converter. It receives MIDI events, quantizes them according to its metronome on the fly and outputs handwritten-like corresponding Lilypond notation. Tempo, meter, key and other parameters can be set via command-line options (@pxref{Invocation}).
+
+@menu
+* Features::
+* Examples::
+* Invocation::  
+* Scripting::   Guile interface
+* Links::       Sources, further information
+@end menu
+
+This program is Copyright @copyright{} 2003 Vaclav Smilauer and is covered by GNU General Public License (see the file @file{COPYING} in the source distribution).
+
+@node Features, Examples, Top, Top
+@chapter Features
+
+Rumor's only purpose is to help out with music transcriptions (even of polyphonic music with separated voices); typical usage is to write Lilypond file skeleton by hand and then paste Rumor output into it (@pxref{Examples}).
+
+It does not want to be a full-blown quantization program; fancy features like tuplets, polyphony and tempo tracking were ommited deliberately.
+
+@itemize
+@item Rumor mimics handwritten Lilypond source:
+
+@itemize
+@item it uses relative notation and omits note length if it has not changed (both can be switched off though)
+@item it writes rhythms intelligently, in relation to bar position (tied single notes, over barlines if necessary)
+@item it resolves enharmonic ambiguities (e.g. @code{gis}/@code{as}) given the @code{--key=@var{NOTE}} option (@pxref{Invocation})
+@end itemize
+
+@item It is scriptable, with support for user-defined rhythm notations, keyboard layout and pitch names (dutch and italian being built-in). @xref{Scripting}.
+
+@item It supports chords (simlutaneous notes), using the <c e>8 syntax.
+
+@item It can talk to MIDI I/O via ALSA or OSS.
+
+@item It can emulate MIDI keyboard using ordinary (computer) keyboard, key layout being scriptable.
+@end itemize
+
+Rumor is written in @code{c++} and developped under Linux; windows port is conceivable but not planned.
+
+@node Examples, Invocation, Features, Top
+@chapter Examples
+
+For real-life examples, @ref{Links}.
+
+@section Minimal sample
+
+A minimalistic rumor session follows (play keyboard, then press ^-C).
+
+@example
+vaclav@@frigo:~/ujf/quant/rumor$ ./rumor -m68 -kb -g32
+b'8 ~ b32 a g fis g16 e cis8 ~ cis16 g' fis8 |
+e d b4 ais8 r |
+ais b32 a g fis g16 e' g, fis32 e fis16 cis' e, cis' |
+e, d32 cis d16 b' ~ b ais ~ ais32 cis b ais b16 d ~ d cis ~|
+cis32 e d cis d16 fis ~ fis e ~ e32 g fis e fis16 b ~ b ais |
+b32 a gis fis gis16 b eis, fis ~ fis32 fis eis dis eis16 gis ais, b ~|
+b32 b ais gis ais16 cis eis, fis d'8 cis
+vaclav@@frigo:~/ujf/quant/rumor$ 
+@end example
+
+@noindent @code{-m68} (or equivalently, @code{--meter=6/8}) sets six-eights bar, @code{-kb} (@code{--key=b}) indicates b-based scale, @code{-g32} (@code{--grain=32}) sets resolution to 32nd notes.
+
+@noindent If run with --full option, Rumor outputs complete Lilypond file; the tune of the precceding session would look thusly (beginning of J.S. Bach's Prelude in b-minor):
+
+@image{hmoll_prael0}
+
+@section More complicated example
+
+Suppose you don not like the tied 16th notes in bar 4 and 5 (indeed, in original sheet, they are printed as eights). I this case, you can override default rhythms by a guile script, loaded with the @code{--script} option (@pxref{Invocation}). The syntax is very simple (@pxref{Scripting}); put the following into file @file{rhythm68.scm}:
+
+@example
+(rumor-rhythms 32 6 8  '(#(8) 18 6))  
+@end example
+
+@noindent Run rumor and play the two bars on the keyboard:
+
+@example
+vaclav@@frigo:~/ujf/quant/rumor$ ./rumor -m68 --script=rhythm68.scm -t80 -kb -a2 -f -g5 > hmoll_prael1.ly
+@end example
+
+@noindent This will lead to
+
+@image{hmoll_prael1}
+
+
+@node    Invocation, Scripting, Examples, Top
+@chapter Invocation
+
+Default start-up values are @code{--alsa=64:0,65:0 --tempo=100 --meter=44 --grain=16 --key=c}.
+
+
+@table @code
+
+@item -g,--grain=@var{NUM}
+Set minimum time resolution to the @var{NUM}th note. Only powers of two are valid, from 1 up to 128.
+
+@item -l,--legato
+Ignore any rests between notes. Every note terminates upon the start of the next one.
+
+@item -D,--no-dots
+Do not use dotted notes (dotted @emph{rests} are always disallowed).
+
+@item -m,--meter=@var{P}[/]@var{Q} 
+Set time signature. Bar will have @var{P} beats of duration of the @var{Q}th note. Metronome will sound every beat. (thus e.g. 4/4 and 8/8 will give the same output, only metronome behavior will change).
+
+@var{Q} must be a power of two. Slash may be omited if @var{P} and @var{Q} are both smaller than 10. 
+
+@item -t,--tempo=@var{BPM}
+Metronome speed will be @var{BPM} beats per minute. Note that what is considered a beat is determined by @code{--meter}.
+
+@item -w,--wait=@var{BEAT}
+Start metronome upon arrival of the first MIDI note, at the beginning of bar (@var{BEAT}=1) unless overridden.
+
+@item --flat
+Output only pitches as you play, no lengths. Metronome will not be started.
+
+@item --no-chords
+Disables chords (groups of notes pressed and released ``simultaneously'', with regard to quantization). Enabled by default.
+
+@item --explicit-durations
+Output duration indication after every note, even if it remains the same as preceedingly.
+
+@item --absolute-pitches
+Do not use Lilypond relative notation. Instead, all pitches have their octave indicated by (possibly zero) tics or commas.
+
+@item --lang=@var{LANG}
+@var{LANG} can be one of @code{ne} (default: @code{ces}, @code{c}, @code{cis}, @dots{}), @code{en}, @code{en-short}, @code{de}, @code{no}, @code{sv}, @code{it}, @code{ca}, @code{es}. Languages match those used by Lilypond (not necessarily the version you have installed, though). Note that pitch names can be always overridden by @code{rumor-pitches} (@pxref{Scripting}).
+
+@item -k,--key=@var{KEY}
+Set base note of current scale, used to resolve enharmonic ambiguities (i.e. @code{fis} vs. @code{ges}). Valid value for @var{KEY} is any pitch having less than two accidentals, in current language (@code{--lang}; this option must precede @code{--key} in order to have effect).
+
+
+Run @code{--sample-sheet} and look at scales to see its impact and possible values for @var{KEY}.
+
+@item --sample-sheet
+Produce complete Lilypond file showing all possible rhythm notations and chromatic scale in all possible keys (see @code{--key}). It is influenced by @code{--meter}, @code{--grain} and also user-defined notations (see @code{--script}).
+
+@item -s,--strip
+Strip leading and trailing rests from output. First and last bars may thus be incomplete.
+
+@item -f,--full
+Output can be fed directly into Lilypond. It will be one--line staff in violin clef and key signature as determined by @code{--accidentals}.
+
+@item -a,--accidentals=@var{NUM}
+Set number of sharps or flats (if @var{NUM} is positive or negative, respectively) for full Lilypond output. No effect without @code{--full}.
+
+@item --script=@var{FILE}
+Run guile script @var{FILE} before beginning. @xref{Scripting}.
+
+@item --alsa=[[@var{IC}:@var{IP},]@var{OC}:@var{OP}]
+Use ALSA interface. If argument is specified, connect input to client @var{IC} on port @var{IP} and output to @var{OC}:@var{OP}. By default, Rumor will try to use @code{64:0,65:0}. If connection fails, you can use @code{aconnect} to do this manually.
+
+If you specify only one pair @code{@var{C}:@var{P}}, it will be the output port. This is useful with @code{--kbd}.
+
+@item --oss[=@var{DEV}]
+Use OSS interface. Device number 0 on @code{/dev/sequencer} will be used, unless overridden by @var{DEV}.
+
+@item --kbd
+Emulate MIDI keyboard using ordinary keyboard. An ordinary MIDI interface (ALSA or OSS) is still needed for metronome and echoing.   Standard input must be a terminal. There is a usable keyboard layout builtin; however, key bindings are configurable via @code{(rumor-kbd ...)} (@pxref{Scripting}).
+
+@item -v,--verbose
+Be verbose. This option may be used more times and every time will increase verbosity level by 1. If it is greater than 3 and Rumor was compiled with debuggins support, debugging and tracing messages will be printed. If verbosity is zero (default), Rumor will only report errors.
+
+@item -?,--help
+@item --usage
+@item -V,--version
+
+@end table
+
+@node Scripting,Links,Invocation,Top
+@chapter Scripting
+
+@menu
+* rumor-rhythms:: override default rhythm notations
+* rumor-pitches:: override default (netherlands) pitch names
+* rumor-kbd::     override default keyboard layout for keyboard emulation
+* rumor-beats::   override default metronome sounds
+@end menu
+ 
+
+@node rumor-rhythms,rumor-pitches,,Scripting
+@section rumor-rhythms
+
+You can change default notations knowing TU at which the note starts, via guile command @code{rumor-rhythms}. Rumor will always look at user-defined notations, if it fails (meaning: there is no notation shorter than or equal to at the position of the note requested), it will use its built-in algorithm. Syntax of the aforementioned command is
+
+@example
+(rumor-rhythms @var{grain} @var{P} @var{Q} @var{notation-def} @dots{})
+@end example
+
+@itemize
+
+@item First three arguments are self-explanatory. If @var{grain} is grater (smaller) than its current value (see @code{--grain}), rhythm will be divided (multiplied) accordingly. Meters like 3/4 and 6/8 are equal.
+
+@item @var{notation-def} has two parts. First we define which is the desired notation. Then we put all TUs at which this rhythm will start.
+
+Notation is vector of basic rhythms (single notes). Basic rhythm is expressed in scheme as numeric duration for undotted notes (like in Lilypond) or as a pair @code{'(@var{DUR} . @var{DOTS})} for notes with @var{DOTS} dots (@code{@var{DUR}} is eqivalent to @code{'(@var{DUR} . 0)}).
+
+@end itemize
+
+@subsection Example
+
+This example can be found as @file{doc/rhythm68.scm} in Rumor source distribution.
+
+@example
+(rumor-rhythms 32 6 8
+@end example
+
+@noindent We have 6/8 bar with 32th notes. This gives 32*6/8=24 TU/bar, one beat corresponding to 4TU.
+
+@example
+  '( #(8) 18 6)
+@end example
+
+@noindent First item in the list is vector (denoted @code{#(...)}) of basic rhythms. Eight note @code{#(8)}; it may appear at positions given after in TU.
+
+@example
+  '( #((4 . 1)) 0 12)
+@end example
+
+@noindent Dotted quarter note (@code{4.} in Lilypond) may be in either half of bar.
+
+@example
+  '( #(8 8) 8)
+@end example
+
+@noindent 6/8 bar is like two subbars, whence we do not want a quarter note to go over the middle: override it with two tied eights (this is where Rumor simple algorithm goes ``wrong'' as it treats 3/4 bar as shortened 4/4).
+
+@example
+ '( #(2) 0 8)
+@end example
+
+@noindent Half note would not normally (i.e. 4/4) begin at the third 1/8 beat, right after first 1/4; however, it is perfectly OK in 6/8.
+
+@example
+)
+@end example
+
+
+
+@node rumor-pitches,rumor-kbd,rumor-rhythms,Scripting
+@section rumor-pitches
+
+Rumor normally uses notations corresponding to @file{nederlands.ly} in standard Lilypond distribution. This command makes it possible to define arbitrary names for different tones.
+
+@example
+(rumor-pitches '(@var{tone} @var{double-flat} @var{flat} @var{natural} @var{sharp} @var{double-sharp}) @dots{})
+@end example
+
+@var{tone} is a number from 0 ("c") to 6 ("b"), next five parameters are strings for respective pitches relative to @var{tone}.
+
+@subsection Example
+
+If you wish to use german (defined in @file{deutsch.ly}) notation, you can do it like this:
+
+@example
+(rumor-pitches
+  '(5 "asas" "as" "a" "ais" "aisis" )
+  '(6 "heses" "b" "h" "his" "hisis")
+)
+@end example
+
+Please note that a better solution is to use @code{--lang=de} to achieve this. This option is now partially obsolete but possibly useful for something fancy.
+
+
+@node rumor-kbd,rumor-beats,rumor-pitches,Scripting
+@section rumor-kbd
+
+If you use @code{--kbd} options (@pxref{Invocation}), you may want to change the builtin keyboard layout (for example, if not using a QWERTY keyboard).
+
+@example
+(rumor-kbd @var{reset} @var{transposition} '(@var{char} . @var{pitch}) @dots{})
+@end example
+
+@itemize
+@item @var{reset} can be either @code{#t} (true), in which case all established bindings will be deleted before adding the new ones. If it is @code{#f} (false), new bindings will be appended (and may overwrite the old ones).
+
+@item @var{transposition}, given in semitones, will be added to all subsequent @var{pitch}es. 
+
+@item @var{char} is a guile character (notation @code{#\c} for small ``c'', for example; there are special characters as @code{#\space}, see guile documentation for these).
+
+@item @var{pitch}+@var{transposition} is MIDI pitch (semitone) generated when @var{char} is received from keyboard. The lowest MIDI ``c'' has zero; as this note practically never used, it generates a rest (note-off).
+@end itemize
+
+If keyboard emulation is not used, this command returns error.
+
+@subsection Example
+
+This example can be found as @file{doc/kbd.scm} in Rumor source distribution.
+
+@example
+(rumor-kbd #t 0 '(#\space . 0))
+@end example
+
+Assign rest to spacebar, first resetting all previous bindings.
+
+@example
+(rumor-kbd #f 60
+@end example
+
+Append new settings, transposing all following pitches by 60 (that is, 5 octaves up).
+
+@example
+                    '(#\g . 6)'(#\h . 8)'(#\j . 10)
+               '(#\v . 5)'(#\b . 7)'(#\n . 9)'(#\m . 11)
+
+       '(#\s . 1)'(#\d . 3)     
+  '(#\z . 0)'(#\x . 2)'(#\c . 4)
+@end example
+
+The source is deliberately laid out as on keyboard. ``z'' is assigned 0+60 and so forth, up to ``m'' (11+60), which completes the octave.
+
+Now we assign the next octave to the same keys, but capitalized:
+
+@example
+(rumor-kbd #f 72
+                   '(#\G . 6)'(#\H . 8)'(#\J . 10)
+               '(#\V . 5)'(#\B . 7)'(#\N . 9)'(#\M . 11)
+
+       '(#\E . 1)'(#\D . 3)      
+  '(#\Z . 0)'(#\X . 2)'(#\C . 4)'
+)
+@end example
+
+
+@node rumor-beats,,rumor-kbd,Scripting
+@section rumor-beats
+
+This command changes default beat sounds.
+
+@example
+(rumor-beats @var{channel} @var{first-beat-specification} @var{other-beats-specification})
+@end example
+
+@var{channel} is MIDI channel we use for beats (note that keyboard input's channel is used also for tone output but not for beat output) and should be 1--16. @var{beat-specification} is specific to the first beat and then to all other beats. It is a list of the following form:
+
+@example
+'(@var{patch} @var{pitch} @var{velocity} @var{duration})
+@end example
+
+@var{instrument} is number of the MIDI instrument or patch (should be 1--128). @var{pitch} is self-explanatory and should be 0--127 (semitone count from the lower (base) @emph{c}). @var{velocity} corresponds to volume and should be in 0--127. @var{duration} is a floating-point number given in seconds. The beat sound will be released after this duration.
+
+@subsection Example
+
+If your setup has a functioning MIDI drum channel, you can use it like this:
+
+@example
+(rumor-beats
+  10 ; this is the MIDI drum (percussion) channel
+     ; with the drum channel, pitches are not pitches,
+     ; they represent different percussions
+  '(15 15 127 0 05) ; 1st beat
+  '(20 20 95  0.05) ; all other beats
+)
+@end example
+
+This example can be found as @file{doc/drums.scm} in Rumor source disribution.
+
+@node Links,,Scripting,Top
+@chapter Links
+
+For further information, consult source documentation and @file{README} in particular. Try also here:
+
+@itemize
+@item homepage: @uref{http://beta.arcig.cz/~eudoxos/rumor/}
+@item sources: @uref{http://www.launchpad.net/rumor}
+@item contact: @uref{mailto:Václav Šmilauer <eu@@doxos.eu> }
+@end itemize
+
+Real-life pieces typeset using Rumor (please report if there are more!)
+
+@itemize
+@item BWV538: @uref{http://www.mutopiaproject.org/cgibin/piece-info.cgi?id=307}
+@item BWV544: @uref{http://www.mutopiaproject.org/cgibin/piece-info.cgi?id=308}
+@item BWV565: @uref{http://www.mutopiaproject.org/cgibin/piece-info.cgi?id=381}
+@item BWV1079: @uref{http://www.mutopiaproject.org/cgibin/piece-info.cgi?id=340}
+@item BWV542: @uref{http://www.mutopiaproject.org/cgibin/piece-info.cgi?id=382}
+@end itemize
+
+
+Related sites:
+
+@itemize
+@item Nicolas Sceaux's Lilypond quick insert mode uses Rumor as its backend: @uref{http://nicolas.sceaux.free.fr/lilypond/lyqi.html}
+@item Lilypond: @uref{http://www.lilypond.org}
+@item Mutopia: @uref{http://www.mutopiaproject.org}
+@item ALSA: @uref{http://www.alsa-project.org}
+@item OSS: @uref{http://www.4fronttech.com}
+@item Guile: @uref{http://www.gnu.org/software/guile/}
+@end itemize
+
+
+@bye
